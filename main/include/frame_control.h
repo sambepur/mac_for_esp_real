@@ -30,6 +30,10 @@
 #define FC_SUBTYPE_CF_END_CF_ACK    0b0000000011110000
 
 // Data
+
+/*
+            qos is used only in this subtype
+*/
 #define FC_SUBTYPE_DATA                 0b0000000000000000
 #define FC_SUBTYPE_DATA_CF_ACK          0b0000000000010000
 #define FC_SUBTYPE_DATA_CF_POLL         0b0000000000100000

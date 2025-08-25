@@ -1,2 +1,2 @@
-idf_component_register(SRCS "frame_r.c" "frame.c" "simpe_scan.c"
+idf_component_register(SRCS "vector_b.c" "frame_r.c" "frame.c" "simpe_scan.c"
                     INCLUDE_DIRS "./include")

@@ -9,37 +9,35 @@
 
 static const char* tag = "SENDER";
 
+static frm_data_t data;
 //static uint8_t macs[MACS_BUFFER_SIZE];
 //static uint8_t macs_offset;
 
 static void printf_mac(uint8_t* mac) {
-    printf("BSSID: ");
     for (int i = 0; i<6; i++) {
         printf("%2x:", mac[i]);
     }
     printf("\n");
+    fflush(stdout);
 }
 
 
 static void wifi_promiscuous_pkt_cb(void* buf, wifi_promiscuous_pkt_type_t pkt) {
-    /*
-    if (pkt.rx_ctrl.sig_len <= MGMT_FRAME_SIZE) {
-        frame_type_t type = type_of_raw_frame(buf);
-        if (type == MGMT_TYPE || type == CTRL_TYPE) {
-            macs[macs_offset] = pkt.payload + FRAME_FIRST_MAC_OFFT;
-            macs_offset++;
-            macs[macs_offset] = pkt.payload + FRAME_SECOND_MAC_OFFT;
-            macs_offset++;
-            macs[macs_offset] = pkt.payload + FRAME_THIRD_MAC_OFFT;
+    if (pkt == WIFI_PKT_MGMT || pkt == WIFI_PKT_CTRL) {
+        wifi_promiscuous_pkt_t* pak = (wifi_promiscuous_pkt_t*)buf;
+        if (pak->rx_ctrl.sig_len >= 24) {
+            data.channel = pak->rx_ctrl.channel;
+            ieee_80211_hdr_t* prime = (ieee_80211_hdr_t*) pak->payload;
+            printf("CHAN: %d\n", data.channel);
+            printf("DST: ");
+            printf_mac(prime->addr_1);
+            printf("SRC: ");
+            printf_mac(prime->addr_2);
+            printf("BSSID: ");
+            printf_mac(prime->addr_3);
+            fflush(stdout);
         }
     }
-    */
-    //frame_type_t type = type_of_raw_frame(buf);
-
-    for (uint8_t d = 0; d< MGMT_FRAME_SIZE; d++) {
-        printf("%x ", ((uint8_t*)buf)[d]);
-    }
-    printf("\n");
 }
 
 
@@ -47,78 +45,29 @@ void app_main(void) {
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    /*
     wifi_promiscuous_filter_t filter = {
         .filter_mask = WIFI_PROMIS_FILTER_MASK_MGMT | WIFI_PROMIS_FILTER_MASK_CTRL
     };
-    */
-    printf("Free heap size before: %ld\n", esp_get_free_heap_size());
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    printf("Free heap size after: %ld\n", esp_get_free_heap_size());
-    ESP_LOGI(tag, "%s\n", "INIT");
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_LOGI(tag, "%s\n", "STARTED");
     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
-    ESP_LOGI(tag, "%s\n", "SCAN_STARTED");
     uint16_t len = 0;
     ESP_ERROR_CHECK(esp_wifi_scan_stop());
-    ESP_LOGI(tag, "%s\n", "SCAN_STOPPED");
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&len));
     wifi_ap_record_t rec[len];
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&len, rec));
-    ESP_LOGI(tag, "%s\n", "AP_REC1");
     for (int i = 0; i<len; i++) {
         printf("ITER %d\n", i);
         printf("SSID: %s\n", rec[i].ssid);
         printf_mac(rec[i].bssid);
         printf("CHANNEL: %d\n", rec[i].primary);
     }
-
-    wifi_scan_config_t scfg = {
-        .channel_bitmap = {
-            .ghz_2_channels = 0b0000000000000000 | (1 << rec[0].primary)
-        },
-        .bssid = rec[0].bssid,
-        .channel = rec[0].primary,
-        .ssid = rec[0].ssid,
-        .show_hidden = true,
-        .scan_type = WIFI_SCAN_TYPE_ACTIVE,
-        .scan_time = {
-            .active = {
-                .max = 500,
-                .min = 100
-            },
-            .passive = 1000
-        },
-        .home_chan_dwell_time = 200
-    };
-
-    //ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, wifi_scan_done, NULL));
+    //ESP_ERROR_CHECK(esp_wifi_stop());
     
-    memset(rec, 0, (size_t) len);
-    len = 0;
-    ESP_LOGI(tag, "%s\n", "CLEARED");
-    ESP_ERROR_CHECK(esp_wifi_scan_start(&scfg, true));
-    ESP_LOGI(tag, "%s\n", "SCAN2_STARTED");
-    ESP_ERROR_CHECK(esp_wifi_scan_stop());
-    ESP_LOGI(tag, "%s\n", "SCAN2_STOPPED");
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&len));
-    ESP_LOGI(tag, "%s: %d\n", "LEN2", len);
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&len, rec));
-    ESP_LOGI(tag, "%s\n", "AP_REC2");
-    for (int i = 0; i<len; i++) {
-        printf("SSID: %s\n", rec[i].ssid);
-        printf_mac(rec[i].bssid);
-        printf("CHANNEL: %d\n", rec[i].primary);
-    }
-    ESP_ERROR_CHECK(esp_wifi_stop());
-    ESP_LOGI(tag, "%s\n", "WIFI_STOPPED");
-    /*
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous(true));
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous_rx_cb(wifi_promiscuous_pkt_cb));
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous_filter(&filter));
-    */
 
     /*
     mapper_t mpp;
