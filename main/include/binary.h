@@ -28,7 +28,4 @@ typedef unsigned char bin_t;
     buff[ind+2] = THIRD_OCTET(dword); \
     buff[ind+3] = FORTH_OCTET(dword); \
 
-u_int16_t array_to_bin_word(u_int8_t*, int);
-u_int32_t array_to_bin_dword(u_int16_t*);
-
 #endif

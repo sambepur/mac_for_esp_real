@@ -5,13 +5,12 @@
 #include "include/frame_r.h"
 #include "nvs_flash.h"
 
+#define TARGET_SSID "I HAVE WAN"
 #define MACS_BUFFER_SIZE 128
 
 static const char* tag = "SENDER";
 
-static frm_data_t data;
-//static uint8_t macs[MACS_BUFFER_SIZE];
-//static uint8_t macs_offset;
+static wifi_ap_data;
 
 static void printf_mac(uint8_t* mac) {
     for (int i = 0; i<6; i++) {
@@ -26,16 +25,8 @@ static void wifi_promiscuous_pkt_cb(void* buf, wifi_promiscuous_pkt_type_t pkt) 
     if (pkt == WIFI_PKT_MGMT || pkt == WIFI_PKT_CTRL) {
         wifi_promiscuous_pkt_t* pak = (wifi_promiscuous_pkt_t*)buf;
         if (pak->rx_ctrl.sig_len >= 24) {
-            data.channel = pak->rx_ctrl.channel;
             ieee_80211_hdr_t* prime = (ieee_80211_hdr_t*) pak->payload;
-            printf("CHAN: %d\n", data.channel);
-            printf("DST: ");
-            printf_mac(prime->addr_1);
-            printf("SRC: ");
-            printf_mac(prime->addr_2);
-            printf("BSSID: ");
-            printf_mac(prime->addr_3);
-            fflush(stdout);
+
         }
     }
 }

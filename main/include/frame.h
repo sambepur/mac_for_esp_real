@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include "frame_control.h"
 #include "binary.h"
+#include "vector_b.h"
 #include "parse.h"
 #include <stdlib.h>
 #include <string.h>
@@ -10,12 +11,6 @@
 
 #ifndef FRAME_H
 #define FRAME_H
-
-
-#define PAYLOAD_32 0xABCDEFEF
-#define PAYLOAD_16 0XABCD
-#define NO_ADDR_DATA 0xB
-#define NO_DATA 0x6E6F
 
 #define FC_PRESENT  0b10000000000
 #define DI_PRESENT  0b01000000000
@@ -35,8 +30,6 @@
 #define SIZE_WITH_ALL_PRESENT_FIELDS 40
 
 #define NESESSARY_MAP_FIELD AD1_PRESENT | FC_PRESENT | DI_PRESENT | FCS_PRESENT
-
-#define BROADCAST_MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
 
 #define CHECK_REST(mpp) \
     if (mpp->frame->seq_control != NO_DATA) {\
@@ -65,12 +58,6 @@
         mpp->map |= AD4_PRESENT; \
         mpp->size += 6; \
     }\
-
-typedef struct {
-    char ssid[33];
-    uint8_t channel;
-    uint8_t** addrs;
-} __packed frm_data_t;
 
 typedef struct {
     u_int16_t frame_control;

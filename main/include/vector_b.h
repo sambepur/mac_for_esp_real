@@ -16,14 +16,17 @@
 
 typedef struct {
     unsigned d_size: 4; // size of block
+    void* _start;
     void* data;
     size_t lnt;
     size_t cap;
-} vector_t;
+} __attribute__((packed)) vector_t;
 
 int vector_init(vector_t*, size_t);
+void* vector_get(vector_t*, size_t);
 int vector_add(vector_t*, void*);
 int vector_remove(vector_t*);
 void vector_destroy(vector_t*);
+void vector_print(vector_t*);
 
 #endif
