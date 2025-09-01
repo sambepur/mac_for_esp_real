@@ -5,12 +5,18 @@
 #include "include/frame_r.h"
 #include "nvs_flash.h"
 
-#define TARGET_SSID "I HAVE WAN"
-#define MACS_BUFFER_SIZE 128
+#define MAX_CLIENTS 10
 
+static const char* target = "I HAVE WAN";
 static const char* tag = "SENDER";
 
-static wifi_ap_data;
+static wifi_ap_data dta;
+static vector_t vec = {
+    .d_size = 6,
+    .mem_type = MALLOC_CAP_8BIT
+};
+
+
 
 static void printf_mac(uint8_t* mac) {
     for (int i = 0; i<6; i++) {
@@ -22,11 +28,19 @@ static void printf_mac(uint8_t* mac) {
 
 
 static void wifi_promiscuous_pkt_cb(void* buf, wifi_promiscuous_pkt_type_t pkt) {
+    static uint8_t cached[MAX_CLIENTS][6];
+    static uint8_t counter = 0;
     if (pkt == WIFI_PKT_MGMT || pkt == WIFI_PKT_CTRL) {
         wifi_promiscuous_pkt_t* pak = (wifi_promiscuous_pkt_t*)buf;
         if (pak->rx_ctrl.sig_len >= 24) {
             ieee_80211_hdr_t* prime = (ieee_80211_hdr_t*) pak->payload;
-
+            if (memcmp(prime->addr_3, dta.bssid, 6)) {
+                if (!is_cached(cached, prime->addr_1, 6)) {
+                    if (vector_add(dta.clients, prime->addr_1) != VEC_OK) {
+                        ESP_LOGI
+                    }
+                }
+            }
         }
     }
 }
@@ -41,6 +55,13 @@ void app_main(void) {
     };
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+
+    vector_err_t check = vector_init(&vec, MAX_CLIENTS);
+    if (check == DRAM_FULL) {
+        ESP_LOGI(tag, "DRAM INIT FIALED");
+    }
+
+
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
     uint16_t len = 0;
@@ -49,42 +70,19 @@ void app_main(void) {
     wifi_ap_record_t rec[len];
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&len, rec));
     for (int i = 0; i<len; i++) {
-        printf("ITER %d\n", i);
-        printf("SSID: %s\n", rec[i].ssid);
-        printf_mac(rec[i].bssid);
-        printf("CHANNEL: %d\n", rec[i].primary);
+        wifi_ap_record_t curr = rec[i];
+        if (strcmp(target, curr.ssid)) {
+            dta.auth = curr.authmode;
+            dta.chan = curr.primary;
+            memcpy(dta.bssid, curr.bssid, 6);
+            ESP_ERROR_CHECK(esp_wifi_set_channel(curr.primary, WIFI_SECOND_CHAN_NONE));
+        }
+        printf("SSID: %s\n", curr.ssid);
+        printf_mac(curr.bssid);
+        printf("CHANNEL: %d\n", curr.primary);
     }
-    //ESP_ERROR_CHECK(esp_wifi_stop());
-    
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous(true));
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous_rx_cb(wifi_promiscuous_pkt_cb));
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous_filter(&filter));
-
-    /*
-    mapper_t mpp;
-    mpp.payload_size = 2;
-    u_int8_t payload[] = {0x1, 0x0};
-    IEEE_80211_frame_t frame = {
-        .frame_control = FC_VER | FC_TYPE_MANAGEMENT | FC_SUBTYPE_DEAUTH,
-        .frame_id_or_duration = 0x0,
-        .addr_1 = NULL,
-        .addr_2 = NULL,
-        .addr_3 = NULL,
-        .seq_control = 0,
-        .addr_4 = NO_ADDR_DATA,
-        .qos_control = NO_DATA,
-        .ht_control = NO_DATA,
-        .data = (void*) payload,
-        .frame_check_seq = 0
-    };
-
-    mpp.frame = frame;
-    mapper_init(&mpp);
-    void* buffer = to_raw_80211_buffer(&mpp);
-    if (buffer == NULL) {
-        ESP_LOGE(tag, "buffer init failed %p\n", buffer);
-        return ESP_FAIL;
-    }
-    */
-    
+    ESP_ERROR_CHECK(esp_wifi_stop());
 }

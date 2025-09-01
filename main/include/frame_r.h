@@ -1,4 +1,5 @@
 #include "frame.h"
+#include "esp_wifi.h"
 #include <stdbool.h>
 
 #ifndef FRAME_R_H
@@ -20,8 +21,10 @@ typedef struct {
 
 
 typedef struct {
-    char ssid[33];
+    uint8_t* ssid;
+    uint8_t bssid[6];
     uint8_t chan;
+    wifi_auth_mode_t auth;
     vector_t* clients;
 } __packed wifi_ap_data;
 

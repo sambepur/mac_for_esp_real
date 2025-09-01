@@ -16,3 +16,12 @@ int cut(char* buff, char* res, int start, size_t lenght) {
     }
     return 0;
 }
+
+bool is_cached(uint8_t** arr, uint8_t* src, size_t len) {
+    for (register size_t i = 1; i<len+1; i++) {
+        if (memcmp(arr[i], src, len)) {
+            return true;
+        }
+    }
+    return false;
+}
